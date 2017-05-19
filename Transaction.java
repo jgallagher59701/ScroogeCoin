@@ -59,20 +59,42 @@ public class Transaction {
         outputs = new ArrayList<Output>(tx.outputs);
     }
 
+    /**
+     * Add a new input.
+     * 
+     * @note See getRawDataToSign() and addSignature() to add the signature
+     * to an Input so the new Input can be signed.
+     * 
+     * @param prevTxHash
+     * @param outputIndex
+     */
     public void addInput(byte[] prevTxHash, int outputIndex) {
         Input in = new Input(prevTxHash, outputIndex);
         inputs.add(in);
     }
 
+    /**
+     * Add an new output
+     * @param value
+     * @param address
+     */
     public void addOutput(double value, PublicKey address) {
         Output op = new Output(value, address);
         outputs.add(op);
     }
 
+    /**
+     * Remove the ith Input
+     * @param index
+     */
     public void removeInput(int index) {
         inputs.remove(index);
     }
 
+    /**
+     * Remove the Input that matches the UTXO - unspent transaction output
+     * @param ut
+     */
     public void removeInput(UTXO ut) {
         for (int i = 0; i < inputs.size(); i++) {
             Input in = inputs.get(i);
@@ -84,6 +106,11 @@ public class Transaction {
         }
     }
 
+    /**
+     * Get the bytes for the Input {@code index} and all of the outputs
+     * @param index
+     * @return Bytes to sign or null if there is no Input with the index {@code index}.
+     */
     public byte[] getRawDataToSign(int index) {
         // ith input and all outputs
         ArrayList<Byte> sigData = new ArrayList<Byte>();
@@ -117,6 +144,11 @@ public class Transaction {
         return sigD;
     }
 
+    /**
+     * Add the given signature to the Input {@code index}
+     * @param signature
+     * @param index
+     */
     public void addSignature(byte[] signature, int index) {
         inputs.get(index).addSignature(signature);
     }
@@ -158,6 +190,10 @@ public class Transaction {
         return tx;
     }
 
+    /**
+     * @note This method may be a misnomer. Maybe ignore and use setHash()
+     * below?
+     */
     public void finalize() {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
