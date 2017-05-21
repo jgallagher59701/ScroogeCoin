@@ -67,10 +67,13 @@ public class TxHandler {
      *     values; and false otherwise.
      */
     public boolean isValidTx(Transaction tx) {
-        // IMPLEMENT THIS
-    	// #1  all outputs claimed by the Transaction (i.e., the inputs it contains) are in the current UTXO pool
-    	//for (Transaction.Input in : tx.getInputs()) {
+        // The 'claimed outputs' (inputs) to this transaction; used to ensure no UTXO is claimed twice
+    	ArrayList<UTXO> txInputs = new ArrayList<UTXO>();
+    	
+    	// holds the sum of the input values
+    	double totInputVal = 0.0;
     	for (int i = 0; i < tx.numInputs(); ++i) {
+    		// #1  all outputs claimed by the Transaction (i.e., the inputs it contains) are in the current UTXO pool
     		Transaction.Input in = tx.getInput(i);
     		UTXO u = new UTXO(in.prevTxHash, in.outputIndex);
     		if (!currentUtxoPool.contains(u)) {
@@ -83,10 +86,30 @@ public class TxHandler {
     			return false;
     		
     		// #3 No UTXO is claimed more than once by the tx inputs
+    		if (txInputs.contains(u))
+    			return false;
+    		else
+    			txInputs.add(u);
+    		
+    		// TODO Look back in the block chain for the tx with in.prevTxHash
+    		// for that tx, look at the output.value for the in.outputIndex
+    		totInputVal += 0.0;	// FIXME Replace 0.0 with the value of the input
     	}
     	
+    	// #4 all of {@code tx}s output values are non-negative, and
+    	// The sum of the output values
+    	double totOutputVal = 0.0;
+    	for (int i = 0; i < tx.numOutputs(); ++i) {
+    		if (tx.getOutput(i).value < 0.0)
+    			return false;
+    		totOutputVal += tx.getOutput(i).value;
+    	}
     	
-    	return false;
+    	// #5 the sum of {@code tx}s input values is greater than or equal to the sum of its output values
+    	if (totInputVal < totOutputVal)
+    		return false;
+    	
+    	return true;	// woo hoo
     }
 
     /**
