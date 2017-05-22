@@ -10,7 +10,7 @@ public class TxHandler {
 
 	// The Block Chain is the ledger
 	// TODO Maybe the ledger is the UTXO Pool?
-	private ArrayList<Transaction> blockChain;
+	// FIXME Not needed. private ArrayList<Transaction> blockChain;
 	
 	// These output transactions are the Create Coin transaction
 	private UTXOPool initialUtxoPool;
@@ -30,6 +30,9 @@ public class TxHandler {
     	initialUtxoPool = new UTXOPool(utxoPool);	// Copy the initial UTXO Pool
     	currentUtxoPool = new UTXOPool(utxoPool);	// And set the initial value of the current UTXO pool
     	
+    	/*
+    	  FIXME Not needed.
+    	  
     	blockChain = new ArrayList<Transaction>();	// Init as empty
     	
     	// The Create Coin transaction
@@ -55,6 +58,7 @@ public class TxHandler {
 
     	// Add the block to the chain
     	blockChain.add(initialBlock);
+    	*/
     }
 
     /**
@@ -91,9 +95,10 @@ public class TxHandler {
     		else
     			txInputs.add(u);
     		
-    		// TODO Look back in the block chain for the tx with in.prevTxHash
-    		// for that tx, look at the output.value for the in.outputIndex
-    		totInputVal += 0.0;	// FIXME Replace 0.0 with the value of the input
+    		// #5 Part one: Sum the value of the inputs.
+    		// Look in the current UTXO pool for in.prevTxHash and use the
+    		// value of the matching Output as the value of the input.
+    		totInputVal += currentUtxoPool.getTxOutput(u).value;
     	}
     	
     	// #4 all of {@code tx}s output values are non-negative, and
@@ -102,6 +107,8 @@ public class TxHandler {
     	for (int i = 0; i < tx.numOutputs(); ++i) {
     		if (tx.getOutput(i).value < 0.0)
     			return false;
+    		
+    		// #5 Part two: Sum the value of the outputs
     		totOutputVal += tx.getOutput(i).value;
     	}
     	
@@ -118,8 +125,46 @@ public class TxHandler {
      * updating the current UTXO pool as appropriate.
      */
     public Transaction[] handleTxs(Transaction[] possibleTxs) {
-        // IMPLEMENT THIS
-    	return null;
+    	// Find the valid transactions
+        ArrayList<Transaction> validTxs = new ArrayList<Transaction>();
+    	for (int i = 0; i < possibleTxs.length; ++i) {
+    		if (isValidTx(possibleTxs[i]))
+    			validTxs.add(possibleTxs[i]);
+    	}
+    	    	
+    	// FIXME ArrayList<Transaction> invalidTxList = new ArrayList<Transaction>();
+    	for (Transaction tx: validTxs) {
+    		// Modify so a Transaction found to be invalid causes no change to the currentUtxoPool
+    		// FIXME UTXOPool tmpPool = new UTXOPool(currentUtxoPool);
+    		
+    		for (int output = 0; output < tx.numOutputs(); ++output) {
+    			currentUtxoPool.addUTXO(new UTXO(tx.getHash(), output), tx.getOutput(output));
+    		}
+    	}
+    	
+    	for (Transaction tx: validTxs) {
+    		// Now remove the Outputs in the current pool that are 'spent' by an Input.
+    		// If an Input spends an Output that doesn't exist, the transaction is invalid
+    		// FIXME boolean validTx = true;	// Assume they are OK
+    		for (int input = 0; input < tx.numInputs() /* && validTx */; ++input) {
+    			UTXO u = new  UTXO(tx.getInput(input).prevTxHash, tx.getInput(input).outputIndex);
+    			if (currentUtxoPool.contains(u)) {
+    				currentUtxoPool.removeUTXO(u);
+    			}
+    			/*
+    			else {
+    				validTx = false;
+    			}
+    			*/
+     		}
+    		/*
+    		if (validTx)
+    			currentUtxoPool = tmpPool;
+    		else
+    			invalidTxList.add(tx);
+    		*/
+    	}
+    	
+    	return validTxs.toArray(new Transaction[validTxs.size()]);
     }
-
 }
