@@ -35,10 +35,7 @@
         }
         */
 
-        
-Test run info:
-
-Running 15 tests
+ Running 15 tests
 Test 1: test isValidTx() with valid transactions
 ==> passed
 
@@ -90,15 +87,12 @@ Number of transactions returned valid by student = 42
 
 Test 11: test handleTransactions() with simple and valid transactions with some double spends
 Total Transactions = 2
-Number of transactions returned valid by student = 2
-All transactions returned are not satisfied/valid
+Number of transactions returned valid by student = 1
 Total Transactions = 50
-Number of transactions returned valid by student = 50
-All transactions returned are not satisfied/valid
+Number of transactions returned valid by student = 21
 Total Transactions = 100
-Number of transactions returned valid by student = 100
-All transactions returned are not satisfied/valid
-==> FAILED
+Number of transactions returned valid by student = 43
+==> passed
 
 Test 12: test handleTransactions() with valid but some transactions are simple, some depend on other transactions
 Total Transactions = 2
@@ -126,11 +120,11 @@ Total Transactions = 2
 Number of transactions returned valid by student = 1
 Returned set is not a maximal set of transactions
 Total Transactions = 50
-Number of transactions returned valid by student = 11
-All transactions returned are not satisfied/valid
+Number of transactions returned valid by student = 6
+Returned set is not a maximal set of transactions
 Total Transactions = 100
-Number of transactions returned valid by student = 48
-All transactions returned are not satisfied/valid
+Number of transactions returned valid by student = 25
+Returned set is not a maximal set of transactions
 ==> FAILED
 
 Test 15: test handleTransactions() with simple, valid transactions being called again to check for changes made in the pool
@@ -143,4 +137,4 @@ Number of transactions returned valid by student = 53
 ==> passed
 
 
-Total:12/15 tests passed!
+Total:13/15 tests passed!

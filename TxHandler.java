@@ -127,44 +127,45 @@ public class TxHandler {
     public Transaction[] handleTxs(Transaction[] possibleTxs) {
     	// Find the valid transactions
         ArrayList<Transaction> validTxs = new ArrayList<Transaction>();
-    	for (int i = 0; i < possibleTxs.length; ++i) {
-    		if (isValidTx(possibleTxs[i]))
-    			validTxs.add(possibleTxs[i]);
+        for (Transaction tx: possibleTxs) {
+    		if (isValidTx(tx))
+    			validTxs.add(tx);
     	}
     	    	
-    	// FIXME ArrayList<Transaction> invalidTxList = new ArrayList<Transaction>();
+    	ArrayList<Transaction> invalidTxList = new ArrayList<Transaction>();
+    	UTXOPool tmpPool = new UTXOPool(currentUtxoPool);
+    	
     	for (Transaction tx: validTxs) {
     		// Modify so a Transaction found to be invalid causes no change to the currentUtxoPool
-    		// FIXME UTXOPool tmpPool = new UTXOPool(currentUtxoPool);
-    		
     		for (int output = 0; output < tx.numOutputs(); ++output) {
-    			currentUtxoPool.addUTXO(new UTXO(tx.getHash(), output), tx.getOutput(output));
+    			tmpPool.addUTXO(new UTXO(tx.getHash(), output), tx.getOutput(output));
     		}
     	}
     	
     	for (Transaction tx: validTxs) {
     		// Now remove the Outputs in the current pool that are 'spent' by an Input.
     		// If an Input spends an Output that doesn't exist, the transaction is invalid
-    		// FIXME boolean validTx = true;	// Assume they are OK
-    		for (int input = 0; input < tx.numInputs() /* && validTx */; ++input) {
+    		boolean validTx = true;	// Assume they are OK
+    		for (int input = 0; input < tx.numInputs() && validTx; ++input) {
     			UTXO u = new  UTXO(tx.getInput(input).prevTxHash, tx.getInput(input).outputIndex);
-    			if (currentUtxoPool.contains(u)) {
-    				currentUtxoPool.removeUTXO(u);
+    			if (tmpPool.contains(u)) {
+    				tmpPool.removeUTXO(u);
     			}
-    			/*
     			else {
     				validTx = false;
     			}
-    			*/
      		}
-    		/*
-    		if (validTx)
-    			currentUtxoPool = tmpPool;
-    		else
+    		
+    		if (!validTx)
     			invalidTxList.add(tx);
-    		*/
     	}
     	
+    	currentUtxoPool = tmpPool;
+    	
+        for (Transaction invalid : invalidTxList) {
+            validTxs.remove(invalid);
+        }
+
     	return validTxs.toArray(new Transaction[validTxs.size()]);
     }
 }
