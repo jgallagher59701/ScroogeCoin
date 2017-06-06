@@ -7,13 +7,6 @@ import java.util.ArrayList;
 //import Transaction.Input;
 
 public class TxHandler {
-
-	// The Block Chain is the ledger
-	// TODO Maybe the ledger is the UTXO Pool?
-	// FIXME Not needed. private ArrayList<Transaction> blockChain;
-	
-	// These output transactions are the Create Coin transaction
-	private UTXOPool initialUtxoPool;
 	
 	// The current UTXO Pool
 	private UTXOPool currentUtxoPool;
@@ -27,38 +20,7 @@ public class TxHandler {
      * transaction.
      */
     public TxHandler(UTXOPool utxoPool) {
-    	initialUtxoPool = new UTXOPool(utxoPool);	// Copy the initial UTXO Pool
     	currentUtxoPool = new UTXOPool(utxoPool);	// And set the initial value of the current UTXO pool
-    	
-    	/*
-    	  FIXME Not needed.
-    	  
-    	blockChain = new ArrayList<Transaction>();	// Init as empty
-    	
-    	// The Create Coin transaction
-    	Transaction initialBlock = new Transaction();
-    	
-    	// Load the initial utxo pool into the block chain as the Transaction block.
-    	// The initial block in the Block Chain (BC) consists of output transactions
-    	// only. Extract these from the initial UTXO pool.
-    	ArrayList<UTXO> utxos = initialUtxoPool.getAllUTXO();
-    	for (UTXO outputTx : utxos) {
-    		Transaction.Output output = initialUtxoPool.getTxOutput(outputTx);
-    		initialBlock.addOutput(output.value, output.address);
-    	}
-    	
-    	// Compute the hash and add it to the block
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(initialBlock.getRawTx());
-            initialBlock.setHash(md.digest());
-        } catch (NoSuchAlgorithmException x) {
-            x.printStackTrace(System.err);
-        }
-
-    	// Add the block to the chain
-    	blockChain.add(initialBlock);
-    	*/
     }
 
     /**
@@ -123,8 +85,10 @@ public class TxHandler {
      * Handles each epoch by receiving an unordered array of proposed transactions, checking each
      * transaction for correctness, returning a mutually valid array of accepted transactions, and
      * updating the current UTXO pool as appropriate.
+     * 
+     * @note This gets a score of 83/95
      */
-    public Transaction[] handleTxs(Transaction[] possibleTxs) {
+    public Transaction[] handleTxs83_95(Transaction[] possibleTxs) {
     	// Find the valid transactions
         ArrayList<Transaction> validTxs = new ArrayList<Transaction>();
         for (Transaction tx: possibleTxs) {
@@ -168,4 +132,81 @@ public class TxHandler {
 
     	return validTxs.toArray(new Transaction[validTxs.size()]);
     }
+    
+    /**
+     * This version works correctly, passing all of the tests.
+     * 
+     * This version assumes all transactions are (possibly) invalid and works on them
+     * one by one, finding the first Tx that validates (isValid()), expanding a temp
+     * UTXO pool with its outputs and marking it valid if all Inputs are valid (spend
+     * only existing Outputs). As each Output for the Tx is spent, it is removed from 
+     * the temp UTXO pool. If the Tx contains only valid Inputs, it is valid and the
+     * temp pool is made the current UTXO pool. This process continues until there are
+     * no more transactions in the invalidTxs list that are actually valid (i.e., when
+     * the entire list is cycled through and no transactions from it are found valid).
+     * 
+     * The trick with this version is to find a valid Tx and then extend the current
+     * UTXO pool so that Tx validity is tested between Inputs and Outputs across Txs
+     * and not just within a singel Tx. That's what the first (more efficient) version
+     * did.
+     * 
+     * @param possibleTxs
+     * @return the largest possible list of transactions
+     */
+    public Transaction[] handleTxs(Transaction[] possibleTxs) {
+
+    	// Transactions known to be valid.
+        ArrayList<Transaction> validTxs = new ArrayList<Transaction>();
+        // Transactions that may be invalid. 
+        ArrayList<Transaction> invalidTxs = new ArrayList<Transaction>();
+        
+        // At the start assume each transaction is invalid. The size of this 
+        // list will shrink until all the remaining Txs on it are invalid.
+        for (Transaction tx: possibleTxs) {
+        	invalidTxs.add(tx);
+        }
+        
+        // Loop until the size of invalidTxs stops shrinking
+        // do { ... } while (invalidTxs.length < starting size);
+        int startingInvalidTxSize;
+        do {
+        	startingInvalidTxSize = invalidTxs.size();
+	        for (Transaction tx: invalidTxs) {
+	    		if (isValidTx(tx)) {
+	
+	    			// Add the tx outputs to the current UTXO (tmp) pool
+	    			UTXOPool tmpPool = new UTXOPool(currentUtxoPool);
+	    			for (int output = 0; output < tx.numOutputs(); ++output)
+	    				tmpPool.addUTXO(new UTXO(tx.getHash(), output), tx.getOutput(output));
+	
+	    			// Now remove the Outputs in the current pool that are 'spent' by an Input in tx.
+	    			// If an Input spends an Output that doesn't exist, the transaction is invalid
+	    			boolean validTx = true;	// Assume they are OK
+	    			for (int input = 0; input < tx.numInputs() && validTx; ++input) {
+	    				UTXO u = new  UTXO(tx.getInput(input).prevTxHash, tx.getInput(input).outputIndex);
+	    				if (tmpPool.contains(u))
+	    					tmpPool.removeUTXO(u);
+	    				else
+	    					validTx = false;
+	    			}
+	    		
+	    			if (validTx) {
+	    				currentUtxoPool = tmpPool;
+	    				validTxs.add(tx);
+	    				//invalidTxs.remove(tx);
+	    			}
+	    		}
+	        }
+	        
+	        // now remove all the validTxs from invalidTxs; could be more efficient
+	        for (Transaction tx: validTxs) {
+	        	if (invalidTxs.contains(tx))
+	        		invalidTxs.remove(tx);
+	        }
+	        
+        } while (invalidTxs.size() < startingInvalidTxSize);
+        
+    	return validTxs.toArray(new Transaction[validTxs.size()]);
+    }
+
 }
