@@ -150,7 +150,7 @@ public class TxHandler {
 	 * 
 	 * The trick with this version is to find a valid Tx and then extend the current
 	 * UTXO pool so that Tx validity is tested between Inputs and Outputs across Txs
-	 * and not just within a singel Tx. That's what the first (more efficient)
+	 * and not just within a single Tx. That's what the first (more efficient)
 	 * version did.
 	 * 
 	 * @param possibleTxs
