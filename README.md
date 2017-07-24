@@ -1,5 +1,7 @@
 [![DOI](https://zenodo.org/badge/91639602.svg)](https://zenodo.org/badge/latestdoi/91639602)
 
+Or the FigShare DOI: 10.6084/m9.figshare.5234998 
+
 # ScroogeCoin
 Crypto-currency assignment 1 (Coursera)
 
